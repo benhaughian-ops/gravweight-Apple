@@ -77,11 +77,16 @@ jobs:
 
       - name: Archive WODwire App
         run: |
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/build_pp.mobileprovision))
+          WATCH_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/watch_pp.mobileprovision))
+          
           xcodebuild archive \
             -project WODwire.xcodeproj \
             -scheme WODwire \
             -archivePath $RUNNER_TEMP/WODwire.xcarchive \
-            -destination "generic/platform=iOS"
+            -destination "generic/platform=iOS" \
+            APP_PROFILE=$UUID \
+            WATCH_PROFILE=$WATCH_UUID
 
       - name: Export .ipa file
         run: |
