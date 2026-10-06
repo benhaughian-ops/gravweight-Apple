@@ -20,8 +20,7 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      - name: Select Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_15.3.app/Contents/Developer
+
 
       # NOTE: To produce an actual .ipa file that can be installed on a device, 
       # you will need to add steps here to install your Apple Developer certificates 
