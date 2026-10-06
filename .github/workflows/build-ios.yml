@@ -128,7 +128,7 @@ jobs:
           
           # Create a Fastfile inside it to handle the API keys properly
           cat <<EOF > fastlane/Fastfile
-          lane :upload_to_testflight do
+          lane :release_testflight do
             app_store_connect_api_key(
               key_id: ENV["APPSTORE_KEY_ID"],
               issuer_id: ENV["APPSTORE_ISSUER_ID"],
@@ -144,4 +144,4 @@ jobs:
           EOF
           
           # Run the inline Fastfile
-          fastlane upload_to_testflight
+          fastlane release_testflight
