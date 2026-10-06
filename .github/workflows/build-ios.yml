@@ -1,4 +1,4 @@
-name: iOS & watchOS Build
+name: iOS & watchOS Build & Release
 
 on:
   push:
@@ -14,35 +14,84 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Install Apple Certificate and Provisioning Profiles
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          WATCH_PROVISION_PROFILE_BASE64: ${{ secrets.WATCH_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          WATCH_PP_PATH=$RUNNER_TEMP/watch_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          # import certificate and provisioning profiles from secrets
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          echo -n "$WATCH_PROVISION_PROFILE_BASE64" | base64 --decode -o $WATCH_PP_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # apply provisioning profiles
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          
+          # extract UUIDs from profiles and rename them so xcodebuild finds them automatically
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $PP_PATH))
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+          
+          WATCH_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $WATCH_PP_PATH))
+          cp $WATCH_PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$WATCH_UUID.mobileprovision
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode Project
         run: xcodegen generate
 
-
-
-      # NOTE: To produce an actual .ipa file that can be installed on a device, 
-      # you will need to add steps here to install your Apple Developer certificates 
-      # and provisioning profiles. For now, this step just verifies that the code 
-      # compiles successfully on a Mac.
-
-      - name: Build iOS App (Simulator Architecture)
+      - name: Create ExportOptions.plist
         run: |
-          xcodebuild clean build \
+          cat <<EOF > exportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>Q7X72CDFC4</string>
+              <key>destination</key>
+              <string>export</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Archive WODwire App
+        run: |
+          xcodebuild archive \
             -project WODwire.xcodeproj \
             -scheme WODwire \
-            -destination "generic/platform=iOS Simulator" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            -archivePath $RUNNER_TEMP/WODwire.xcarchive \
+            -destination "generic/platform=iOS"
 
-      - name: Build watchOS App (Simulator Architecture) 
+      - name: Export .ipa file
         run: |
-          xcodebuild build \
-            -project WODwire.xcodeproj \
-            -scheme WODwireWatch \
-            -destination "generic/platform=watchOS Simulator" \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/WODwire.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist exportOptions.plist
+
+      - name: Upload .ipa as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WODwire-App
+          path: ${{ runner.temp }}/export/*.ipa

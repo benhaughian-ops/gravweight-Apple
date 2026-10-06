@@ -15,8 +15,8 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
-    CODE_SIGN_STYLE: Automatic
-    DEVELOPMENT_TEAM: ""          # ← put your 10-character Apple Team ID here (or pick it in Xcode)
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: "Q7X72CDFC4"
     ENABLE_USER_SCRIPT_SANDBOXING: YES
 
 packages:
