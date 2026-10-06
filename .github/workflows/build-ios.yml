@@ -1,0 +1,49 @@
+name: iOS & watchOS Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build WODwire Apple Apps
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.3.app/Contents/Developer
+
+      # NOTE: To produce an actual .ipa file that can be installed on a device, 
+      # you will need to add steps here to install your Apple Developer certificates 
+      # and provisioning profiles. For now, this step just verifies that the code 
+      # compiles successfully on a Mac.
+
+      - name: Build iOS App (Simulator Architecture)
+        run: |
+          xcodebuild clean build \
+            -project WODwire.xcodeproj \
+            -scheme WODwire \
+            -destination "platform=iOS Simulator,name=iPhone 15 Pro,OS=latest" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build watchOS App (Simulator Architecture) 
+        run: |
+          xcodebuild build \
+            -project WODwire.xcodeproj \
+            -scheme WODwireWatch \
+            -destination "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm),OS=latest" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
