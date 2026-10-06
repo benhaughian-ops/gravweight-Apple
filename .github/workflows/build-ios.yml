@@ -60,6 +60,8 @@ jobs:
 
       - name: Create ExportOptions.plist
         run: |
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/build_pp.mobileprovision))
+          WATCH_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/watch_pp.mobileprovision))
           cat <<EOF > exportOptions.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -71,6 +73,17 @@ jobs:
               <string>Q7X72CDFC4</string>
               <key>destination</key>
               <string>export</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.WODwire</key>
+                  <string>$UUID</string>
+                  <key>com.WODwire.watchkitapp</key>
+                  <string>$WATCH_UUID</string>
+              </dict>
           </dict>
           </plist>
           EOF
@@ -86,9 +99,7 @@ jobs:
             -archivePath $RUNNER_TEMP/WODwire.xcarchive \
             -destination "generic/platform=iOS" \
             APP_PROFILE=$UUID \
-            WATCH_PROFILE=$WATCH_UUID \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="Q7X72CDFC4"
+            WATCH_PROFILE=$WATCH_UUID
 
       - name: Export .ipa file
         run: |

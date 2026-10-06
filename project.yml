@@ -48,6 +48,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE)
+        CODE_SIGN_IDENTITY: "Apple Distribution"
     info:
       path: WODwire/Info.plist
       properties:
@@ -90,6 +91,7 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         PROVISIONING_PROFILE_SPECIFIER: $(WATCH_PROFILE)
+        CODE_SIGN_IDENTITY: "Apple Distribution"
     info:
       path: WODwireWatch/Info.plist
       properties:
