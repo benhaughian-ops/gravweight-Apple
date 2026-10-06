@@ -86,7 +86,8 @@ jobs:
             -archivePath $RUNNER_TEMP/WODwire.xcarchive \
             -destination "generic/platform=iOS" \
             APP_PROFILE=$UUID \
-            WATCH_PROFILE=$WATCH_UUID
+            WATCH_PROFILE=$WATCH_UUID \
+            CODE_SIGN_IDENTITY="Apple Distribution"
 
       - name: Export .ipa file
         run: |
