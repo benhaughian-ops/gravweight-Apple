@@ -4,7 +4,7 @@ import ClerkKit
 /// All Clerk SDK calls live here, so if the Clerk iOS API changes you only touch this file.
 /// Uses the same Clerk instance (publishable key) as the Android app and the web dashboard.
 enum AppConfig {
-    static let clerkPublishableKey = "pk_test_YXdhcmUtbWF5Zmx5LTU0OTguY2xlcmsuYWNjb3VudHMuZGV2JA"
+    static let clerkPublishableKey = "pk_live_Y2xlcmsud29kd2lyZS5jb20k"
 }
 
 @MainActor
