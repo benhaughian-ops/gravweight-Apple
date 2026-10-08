@@ -67,6 +67,9 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity)
                 }
 
+                // ── Coaching Advice ──
+                CoachingCard()
+
                 // ── Heart + Energy ──
                 HStack(alignment: .top, spacing: 12) {
                     HeartCard(today: vm.today, server: serverToday)
@@ -416,5 +419,54 @@ private struct TrainingTodayCard: View {
             out.append(l.exercise)
         }
         return out
+    }
+}
+
+// MARK: - Coaching
+
+private struct CoachingCard: View {
+    @Environment(\.palette) private var p
+    @EnvironmentObject private var vm: PhoneViewModel
+    
+    var body: some View {
+        let insight: String = {
+            let cal = Calendar.current
+            let now = Date().timeIntervalSince1970 * 1000
+            let sevenDaysAgo = now - 7 * 86400 * 1000
+            var activeDays = Set<Date>()
+            for log in vm.logs where Double(log.timestamp) > sevenDaysAgo { activeDays.insert(cal.startOfDay(for: log.date)) }
+            for s in vm.sessions where Double(s.startTime) > sevenDaysAgo { activeDays.insert(cal.startOfDay(for: s.startDate)) }
+            
+            let recentLogs = vm.logs.filter { Double($0.timestamp) > now - 3 * 86400 * 1000 }
+            let highRpeCount = recentLogs.filter { ($0.rpe ?? 0) >= 9 }.count
+            
+            if activeDays.count >= 5 {
+                return "You've pushed hard with \(activeDays.count) active days this week! Make sure to prioritize recovery, drink plenty of water, and consider a light mobility day."
+            } else if highRpeCount >= 3 {
+                return "You've logged several near-max sets recently. If you feel fatigued, consider a deload or technique-focused session to let your nervous system recover."
+            } else if activeDays.isEmpty {
+                return "It's been a little while since your last session. Don't worry about hitting PRs today; just focus on getting moving and slowly rebuilding your momentum."
+            } else if activeDays.count >= 3 {
+                return "You're building a great rhythm! Keep that momentum going, but remember to listen to your body and fuel your recovery with plenty of protein."
+            } else {
+                return "Consistency is the secret to progress. Focus on solid form today, stay hydrated, and take adequate rest between your sets."
+            }
+        }()
+        
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Brand.cyanGlow)
+                Text("COACHING INSIGHT").font(.system(size: 11, weight: .semibold)).tracking(1.5).foregroundStyle(p.dim)
+            }
+            Text(insight)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(p.text)
+                .lineSpacing(4)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(p.glass, in: RoundedRectangle(cornerRadius: 22))
     }
 }

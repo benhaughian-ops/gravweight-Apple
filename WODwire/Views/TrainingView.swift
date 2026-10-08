@@ -176,6 +176,7 @@ struct EditLogSheet: View {
     @State private var rpe: Int?
     @State private var tempo: String?
     @State private var variant: String?
+    @State private var date: Date = Date()
 
     private var exerciseOptions: [String] {
         let custom = log.exercise.trimmingCharacters(in: .whitespaces)
@@ -203,6 +204,7 @@ struct EditLogSheet: View {
 
                 Section {
                     DisclosureGroup("Advanced", isExpanded: $showAdvanced) {
+                        DatePicker("Time", selection: $date)
                         Picker("RPE", selection: $rpe) {
                             Text("—").tag(Int?.none)
                             ForEach(1...10, id: \.self) { Text("\($0)").tag(Int?.some($0)) }
@@ -235,6 +237,7 @@ struct EditLogSheet: View {
                         updated.rpe = rpe
                         updated.tempo = tempo
                         updated.variant = variant
+                        updated.timestamp = Int64(date.timeIntervalSince1970 * 1000)
                         onSave(updated)
                         dismiss()
                     }
@@ -249,6 +252,7 @@ struct EditLogSheet: View {
             rpe = log.rpe
             tempo = log.tempo
             variant = log.variant
+            date = Date(timeIntervalSince1970: TimeInterval(log.timestamp) / 1000)
             showAdvanced = log.rpe != nil || log.tempo != nil || log.variant != nil
         }
     }

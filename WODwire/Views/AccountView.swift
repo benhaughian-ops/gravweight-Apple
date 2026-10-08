@@ -85,7 +85,12 @@ struct AccountView: View {
                 Button {
                     signingIn = true
                     Task {
-                        do { try await AuthBridge.signInWithGoogle() }
+                        do { 
+                            try await AuthBridge.signInWithGoogle() 
+                            if Clerk.shared.user == nil {
+                                showAuthView = true
+                            }
+                        }
                         catch { showAuthView = true }
                         signingIn = false
                     }
