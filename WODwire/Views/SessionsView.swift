@@ -72,12 +72,18 @@ struct SessionsView: View {
     }
 }
 
+struct NativeEmbedPayload: Codable {
+    let session: ExerciseSessionDto
+    let logs: [LogEntry]
+}
+
 private struct SessionCard: View {
     @EnvironmentObject private var vm: PhoneViewModel
     @Environment(\.palette) private var p
     let session: ExerciseSessionDto
     let isExpanded: Bool
     let onToggle: () -> Void
+    @State private var showWebView = false
 
     var body: some View {
         let sessionLogs = vm.logs.filter { $0.timestamp >= session.startTime && $0.timestamp <= session.endTime }
@@ -150,6 +156,18 @@ private struct SessionCard: View {
                                 .font(.system(size: 13)).foregroundStyle(p.text)
                         }
                     }
+
+                    Button(action: { showWebView = true }) {
+                        Text("View Detailed Analysis ✨")
+                            .font(.system(size: 14, weight: .bold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Brand.cyanGlow.opacity(0.15))
+                            .foregroundStyle(Brand.cyanGlow)
+                            .cornerRadius(8)
+                    }
+                    .padding(.top, 16)
+                    .buttonStyle(.plain)
                 }
                 .padding(.top, 12)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -159,7 +177,28 @@ private struct SessionCard: View {
         .background(p.glass, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(isExpanded ? Brand.cyanGlow.opacity(0.4) : p.dim.opacity(0.2), lineWidth: 1))
         .contentShape(Rectangle())
-        .onTapGesture(perform: onToggle)
+        .onTapGesture {
+            // Toggle expansion when tapping the card (but button taps will be captured by the Button)
+            onToggle()
+        }
+        .sheet(isPresented: $showWebView) {
+            let payload = NativeEmbedPayload(session: session, logs: sessionLogs)
+            if let data = try? JSONEncoder().encode(payload) {
+                ZStack(alignment: .topTrailing) {
+                    p.bg.ignoresSafeArea()
+                    SessionAnalysisWebView(sessionData: data)
+                    
+                    Button(action: { showWebView = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(p.text)
+                            .padding()
+                    }
+                }
+            } else {
+                Text("Error preparing session data.")
+            }
+        }
     }
 
     private func stat(_ label: String, _ value: String, _ color: Color) -> some View {
