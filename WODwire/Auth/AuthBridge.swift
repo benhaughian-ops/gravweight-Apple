@@ -28,7 +28,7 @@ enum AuthBridge {
 
     /// Google sign-in (same as the Android "Sign in with Google" button).
     static func signInWithGoogle() async throws {
-        _ = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
+        _ = try await Clerk.shared.auth.startHostedAuth()
     }
 
     static func signOut() async {
