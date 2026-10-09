@@ -504,12 +504,12 @@ struct DaySummarySheet: View {
         let mServer = vm.healthMetrics.first { $0.date == dateKey }
         
         let steps = mLocal?.steps ?? mServer?.steps ?? 0
-        let activeKcal = mLocal?.activeKcal ?? mServer?.activeCalories ?? 0
-        let totalKcal = mLocal?.totalKcal ?? mServer?.calories
+        let activeKcal = mLocal?.activeCalories ?? mServer?.activeCalories ?? 0
+        let totalKcal = mLocal?.calories ?? mServer?.calories
         let activeMin = mLocal?.activeMinutes ?? mServer?.activeMinutes ?? 0
-        let restingHr = mLocal?.restingHr ?? mServer?.restingHeartRate
-        let maxHr = mLocal?.maxHr ?? mServer?.maxHeartRate
-        let hourlyHr = mLocal?.hourlyHr ?? []
+        let restingHr = mLocal?.restingHeartRate ?? mServer?.restingHeartRate
+        let maxHr = mLocal?.maxHeartRate ?? mServer?.maxHeartRate
+        let hourlyHr: [Int?] = [] // Server copy does not store hourly heart rates yet
         
         let logs = vm.logs.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
         let sessions = vm.sessions.filter { !$0.isHidden && Calendar.current.isDate($0.startDate, inSameDayAs: date) }
