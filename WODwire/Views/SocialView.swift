@@ -47,8 +47,12 @@ struct SocialView: View {
                         )
                     case 1:
                         FriendsTab(onOpenProfile: { profileTarget = ProfileTarget(id: $0) })
-                    default:
+                    case 2:
                         GroupsTab(onOpenProfile: { profileTarget = ProfileTarget(id: $0) })
+                    case 3:
+                        VersusTab()
+                    default:
+                        ChallengesTab()
                     }
                 }
                 .frame(maxHeight: .infinity, alignment: .top)
@@ -152,14 +156,16 @@ struct SocialView: View {
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0..<5, id: \.self) { i in
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { tab = i }
                 } label: {
                     VStack(spacing: 8) {
-                        Text(["Feed", "Friends", "Groups"][i])
-                            .font(.system(size: 14, weight: tab == i ? .bold : .medium))
+                        Text(["Feed", "Friends", "Groups", "Versus", "Challenges"][i])
+                            .font(.system(size: 12, weight: tab == i ? .bold : .medium))
                             .foregroundStyle(tab == i ? Brand.deepOrange : p.dim)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                         Rectangle()
                             .fill(tab == i ? Brand.deepOrange : Color.clear)
                             .frame(height: 2)
@@ -1091,6 +1097,88 @@ struct FlowLayout: Layout {
             v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
             x += s.width + spacing
             rowH = max(rowH, s.height)
+        }
+    }
+}
+
+// MARK: - Versus & Challenges Web Links
+
+struct VersusTab: View {
+    @Environment(\.palette) private var p
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "bolt.shield.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(
+                    LinearGradient(colors: [Brand.deepOrange, Brand.electricBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+            
+            VStack(spacing: 8) {
+                Text("Versus Mode")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(p.text)
+                Text("Challenge your friends to head-to-head battles and compare stats.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(p.dim)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+            
+            Button {
+                if let url = URL(string: "https://wodwire.com/#versus") { openURL(url) }
+            } label: {
+                Text("Open on Dashboard")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(Brand.deepOrange, in: Capsule())
+            }
+            .padding(.top, 16)
+            Spacer()
+        }
+    }
+}
+
+struct ChallengesTab: View {
+    @Environment(\.palette) private var p
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "flag.checkered.2.crossed")
+                .font(.system(size: 64))
+                .foregroundStyle(
+                    LinearGradient(colors: [Brand.success, Brand.cyanGlow], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+            
+            VStack(spacing: 8) {
+                Text("Challenges")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(p.text)
+                Text("Join community challenges, track your progress, and climb the leaderboards.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(p.dim)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+            
+            Button {
+                if let url = URL(string: "https://wodwire.com/#social-challenges") { openURL(url) }
+            } label: {
+                Text("Open on Dashboard")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(Brand.success, in: Capsule())
+            }
+            .padding(.top, 16)
+            Spacer()
         }
     }
 }
