@@ -92,6 +92,11 @@ jobs:
         run: |
           UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/build_pp.mobileprovision))
           WATCH_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i $RUNNER_TEMP/watch_pp.mobileprovision))
+
+          # Unique, always-increasing build number for TestFlight (must beat the last upload).
+          # Applies to both the iPhone and Watch targets so they stay in sync.
+          BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))
+          echo "Using build number $BUILD_NUMBER"
           
           xcodebuild archive \
             -project WODwire.xcodeproj \
@@ -99,7 +104,8 @@ jobs:
             -archivePath $RUNNER_TEMP/WODwire.xcarchive \
             -destination "generic/platform=iOS" \
             APP_PROFILE=$UUID \
-            WATCH_PROFILE=$WATCH_UUID
+            WATCH_PROFILE=$WATCH_UUID \
+            CURRENT_PROJECT_VERSION=$BUILD_NUMBER
 
       - name: Export .ipa file
         run: |
