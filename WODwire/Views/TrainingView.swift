@@ -177,6 +177,7 @@ struct EditLogSheet: View {
     @State private var tempo: String?
     @State private var variant: String?
     @State private var date: Date = Date()
+    @State private var isWarmup: Bool = false
 
     private var exerciseOptions: [String] {
         let custom = log.exercise.trimmingCharacters(in: .whitespaces)
@@ -200,6 +201,7 @@ struct EditLogSheet: View {
                         ForEach(1...10, id: \.self) { Text("\($0)").tag($0) }
                     }
                     TextField("Notes", text: $notes, axis: .vertical)
+                    Toggle("Warm-up Set", isOn: $isWarmup)
                 }
 
                 Section {
@@ -237,6 +239,7 @@ struct EditLogSheet: View {
                         updated.rpe = rpe
                         updated.tempo = tempo
                         updated.variant = variant
+                        updated.isWarmup = isWarmup
                         updated.timestamp = Int64(date.timeIntervalSince1970 * 1000)
                         onSave(updated)
                         dismiss()
@@ -252,6 +255,7 @@ struct EditLogSheet: View {
             rpe = log.rpe
             tempo = log.tempo
             variant = log.variant
+            isWarmup = log.isWarmup ?? false
             date = Date(timeIntervalSince1970: TimeInterval(log.timestamp) / 1000)
             showAdvanced = log.rpe != nil || log.tempo != nil || log.variant != nil
         }

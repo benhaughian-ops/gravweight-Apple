@@ -17,12 +17,13 @@ struct LogEntry: Codable, Identifiable, Equatable {
     @Flex var rpe: Int? = nil
     @Flex var tempo: String? = nil
     @Flex var variant: String? = nil
+    @Flex var isWarmup: Bool? = nil
 
     var date: Date { Date(timeIntervalSince1970: TimeInterval(timestamp) / 1000) }
 
     static func == (a: LogEntry, b: LogEntry) -> Bool {
         a.id == b.id && a.timestamp == b.timestamp && a.weightLbs == b.weightLbs && a.exercise == b.exercise &&
-            a.reps == b.reps && a.notes == b.notes && a.rpe == b.rpe && a.tempo == b.tempo && a.variant == b.variant
+            a.reps == b.reps && a.notes == b.notes && a.rpe == b.rpe && a.tempo == b.tempo && a.variant == b.variant && a.isWarmup == b.isWarmup
     }
 }
 
