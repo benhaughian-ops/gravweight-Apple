@@ -334,6 +334,8 @@ private struct WeekStrip: View {
     let todaySteps: Int
     let goal: Int
 
+    @State private var selectedDayTarget: DayTarget? = nil
+
     var body: some View {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -357,7 +359,16 @@ private struct WeekStrip: View {
                         .foregroundStyle(isToday ? p.text : p.dim)
                 }
                 .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selectedDayTarget = DayTarget(id: key, date: d)
+                }
             }
+        }
+        .sheet(item: $selectedDayTarget) { target in
+            DaySummarySheet(date: target.date, dateKey: target.id)
+                .environmentObject(vm)
+                .environment(\.palette, p)
         }
     }
 }

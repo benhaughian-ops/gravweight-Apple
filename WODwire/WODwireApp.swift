@@ -58,6 +58,7 @@ struct PhoneTabView: View {
                 .tag(1)
             SocialView()
                 .tabItem { Label("SOCIAL", systemImage: "person.2.fill") }
+                .badge(vm.notifications.filter { !$0.is_read }.count)
                 .tag(2)
             TrainingView(subTab: $trainingSubTab, focusedSessionId: $focusedSessionId, onGoToSession: goToSession)
                 .tabItem { Label("TRAINING", systemImage: "waveform.path.ecg") }

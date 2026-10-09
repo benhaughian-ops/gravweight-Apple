@@ -66,8 +66,19 @@ struct SocialView: View {
             }
         }
         .sheet(isPresented: $showNotifications) {
-            NotificationsSheet(notifications: notificationSnapshot)
-                .themed(vm)
+            NotificationsSheet(notifications: notificationSnapshot) { n in
+                showNotifications = false
+                switch n.type {
+                case "friend_request", "friend_accept":
+                    tab = 1
+                    if let uid = n.link_id { profileTarget = ProfileTarget(id: uid) }
+                case "group_post":
+                    tab = 2
+                default:
+                    tab = 0
+                }
+            }
+            .themed(vm)
         }
         .sheet(item: $createPrefill) { pre in
             CreatePostSheet(prefill: pre, onPosted: { tab = 0 })
@@ -549,6 +560,7 @@ struct NotificationsSheet: View {
     @Environment(\.palette) private var p
     @Environment(\.dismiss) private var dismiss
     let notifications: [NotificationDto]
+    var onSelect: (NotificationDto) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -580,6 +592,8 @@ struct NotificationsSheet: View {
                             }
                             .padding(12)
                             .background(n.is_read ? p.glass : Brand.cyanGlow.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                            .contentShape(Rectangle())
+                            .onTapGesture { onSelect(n) }
                         }
                     }
                 }
