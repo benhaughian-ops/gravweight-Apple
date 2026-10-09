@@ -34,7 +34,14 @@ struct RootView: View {
             .onAppear { vm.onAuthChanged(AuthBridge.currentUser) }
             .onChange(of: clerk.user?.id) { _, _ in vm.onAuthChanged(AuthBridge.currentUser) }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await vm.refreshHealth(force: false) } }
+                if phase == .active { 
+                    Task { 
+                        await vm.refreshHealth(force: false) 
+                        if vm.currentUser != nil {
+                            await vm.fetchNotifications()
+                        }
+                    } 
+                }
             }
             .onOpenURL { url in Task { await AuthBridge.handle(url: url) } }
     }
