@@ -562,7 +562,7 @@ struct DaySummarySheet: View {
 
                     // Training
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("TRAINING").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(Brand.neonBlue)
+                        Text("TRAINING").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(Brand.minuteBlue)
                         if logs.isEmpty && sessions.isEmpty {
                             Text("No training logged.")
                                 .font(.system(size: 14)).foregroundStyle(p.dim)
