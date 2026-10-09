@@ -476,7 +476,6 @@ private struct CoachingCard: View {
                 .foregroundStyle(p.text)
                 .lineSpacing(4)
         }
-        }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(p.glass, in: RoundedRectangle(cornerRadius: 22))
