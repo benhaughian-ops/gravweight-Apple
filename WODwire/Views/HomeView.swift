@@ -476,8 +476,148 @@ private struct CoachingCard: View {
                 .foregroundStyle(p.text)
                 .lineSpacing(4)
         }
+        }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(p.glass, in: RoundedRectangle(cornerRadius: 22))
+    }
+}
+
+// MARK: - DayTarget & DaySummarySheet
+
+struct DayTarget: Identifiable {
+    let id: String
+    let date: Date
+}
+
+struct DaySummarySheet: View {
+    @EnvironmentObject private var vm: PhoneViewModel
+    @Environment(\.palette) private var p
+    @Environment(\.dismiss) private var dismiss
+
+    let date: Date
+    let dateKey: String
+
+    var body: some View {
+        let isToday = Calendar.current.isDateInToday(date)
+        let mLocal = vm.week.first { $0.date == dateKey }
+        let mServer = vm.healthMetrics.first { $0.date == dateKey }
+        
+        let steps = mLocal?.steps ?? mServer?.steps ?? 0
+        let activeKcal = mLocal?.activeKcal ?? mServer?.activeCalories ?? 0
+        let totalKcal = mLocal?.totalKcal ?? mServer?.calories
+        let activeMin = mLocal?.activeMinutes ?? mServer?.activeMinutes ?? 0
+        let restingHr = mLocal?.restingHr ?? mServer?.restingHeartRate
+        let maxHr = mLocal?.maxHr ?? mServer?.maxHeartRate
+        let hourlyHr = mLocal?.hourlyHr ?? []
+        
+        let logs = vm.logs.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }
+        let sessions = vm.sessions.filter { !$0.isHidden && Calendar.current.isDate($0.startDate, inSameDayAs: date) }
+        let volume = logs.reduce(0.0) { $0 + $1.weightLbs * Double(max($1.reps, 1)) }
+        let sessionMins = sessions.reduce(0) { $0 + $1.durationMinutes }
+
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Rings
+                    ZStack {
+                        GoalRings(rings: [
+                            (Double(steps) / Double(vm.goals.steps), Brand.stepGreen),
+                            (Double(activeKcal) / Double(vm.goals.activeKcal), Brand.kcalOrange),
+                            (Double(activeMin) / Double(vm.goals.activeMinutes), Brand.minuteBlue)
+                        ], ringWidth: 16, gap: 4)
+                        
+                        VStack {
+                            Text(Fmt.thousands(steps))
+                                .font(.system(size: 32, weight: .heavy))
+                                .foregroundStyle(p.text)
+                            Text("Steps")
+                                .font(.system(size: 13))
+                                .foregroundStyle(p.dim)
+                        }
+                    }
+                    .frame(width: 200, height: 200)
+                    .padding(.top, 20)
+
+                    HStack(spacing: 20) {
+                        MetricBox(title: "Active kcal", value: "\(activeKcal)", color: Brand.kcalOrange)
+                        MetricBox(title: "Active min", value: "\(activeMin)", color: Brand.minuteBlue)
+                        MetricBox(title: "Total burn", value: totalKcal != nil ? "\(totalKcal!)" : "--", color: .gray)
+                    }
+
+                    // Heart
+                    if restingHr != nil || maxHr != nil || hourlyHr.contains(where: { $0 != nil }) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("HEART").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(Brand.heartRed)
+                            HStack {
+                                Text("Resting: \(restingHr.map { "\($0)" } ?? "--") bpm")
+                                Spacer()
+                                Text("Max: \(maxHr.map { "\($0)" } ?? "--") bpm")
+                            }
+                            .font(.system(size: 14)).foregroundStyle(p.text)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(p.glass, in: RoundedRectangle(cornerRadius: 16))
+                    }
+
+                    // Training
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("TRAINING").font(.system(size: 12, weight: .bold)).tracking(1).foregroundStyle(Brand.neonBlue)
+                        if logs.isEmpty && sessions.isEmpty {
+                            Text("No training logged.")
+                                .font(.system(size: 14)).foregroundStyle(p.dim)
+                        } else {
+                            if !sessions.isEmpty {
+                                Text("\(sessions.count) Session(s) · \(sessionMins) min")
+                                    .font(.system(size: 14)).foregroundStyle(p.text)
+                            }
+                            if !logs.isEmpty {
+                                Text("\(logs.count) Set(s) · \(Fmt.thousands(volume)) lbs volume")
+                                    .font(.system(size: 14)).foregroundStyle(p.text)
+                                
+                                let lifts = Array(Set(logs.map { $0.exercise })).sorted()
+                                Text("Exercises: \(lifts.joined(separator: ", "))")
+                                    .font(.system(size: 13)).foregroundStyle(p.dim)
+                                    .padding(.top, 2)
+                            }
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(p.glass, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .padding()
+            }
+            .background(p.bg.ignoresSafeArea())
+            .navigationTitle(isToday ? "Today" : Fmt.date(date, "EEEE, MMM d"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
+private struct MetricBox: View {
+    @Environment(\.palette) private var p
+    let title: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(p.text)
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(p.glass, in: RoundedRectangle(cornerRadius: 12))
     }
 }
