@@ -7,6 +7,7 @@ struct WODwireApp: App {
 
     init() {
         AuthBridge.configure()
+        AppNotifications.shared.configure()
         _vm = StateObject(wrappedValue: PhoneViewModel())
     }
 
@@ -31,8 +32,22 @@ struct RootView: View {
             .environment(\.palette, palette)
             .preferredColorScheme(vm.isDarkMode ? .dark : .light)
             .overlay { ToastOverlay(message: vm.toast) }
-            .onAppear { vm.onAuthChanged(AuthBridge.currentUser) }
+            .overlay(alignment: .top) { NotificationBanner() }
+            .onAppear {
+                vm.onAuthChanged(AuthBridge.currentUser)
+                let model = vm
+                AppNotifications.shared.onTap = { [weak model] route, _ in model?.openRoute(route) }
+            }
             .onChange(of: clerk.user?.id) { _, _ in vm.onAuthChanged(AuthBridge.currentUser) }
+            // App-wide notification polling — alerts show on every tab, not just Social.
+            .task(id: vm.currentUser?.userId) {
+                guard vm.currentUser != nil else { return }
+                AppNotifications.shared.requestAuthorization()
+                while !Task.isCancelled {
+                    await vm.fetchNotifications()
+                    try? await Task.sleep(nanoseconds: 20_000_000_000)
+                }
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { 
                     Task { 
@@ -41,6 +56,8 @@ struct RootView: View {
                             await vm.fetchNotifications()
                         }
                     } 
+                } else if phase == .background, vm.currentUser != nil {
+                    AppNotifications.shared.scheduleRefresh()
                 }
             }
             .onOpenURL { url in Task { await AuthBridge.handle(url: url) } }
@@ -65,7 +82,7 @@ struct PhoneTabView: View {
                 .tag(1)
             SocialView()
                 .tabItem { Label("SOCIAL", systemImage: "person.2.fill") }
-                .badge(vm.notifications.filter { !$0.is_read }.count)
+                .badge(vm.unreadNotificationCount)
                 .tag(2)
             TrainingView(subTab: $trainingSubTab, focusedSessionId: $focusedSessionId, onGoToSession: goToSession)
                 .tabItem { Label("TRAINING", systemImage: "waveform.path.ecg") }
@@ -77,6 +94,8 @@ struct PhoneTabView: View {
         .tint(Brand.cyanGlow)
         .toolbarBackground(p.bg, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        // Any notification tap jumps to Social; SocialView then opens the right sub-tab.
+        .onChange(of: vm.openSocialRequest) { _, _ in selectedTab = 2 }
     }
 
     /// Log card ⓘ → the session that contains that log's timestamp.

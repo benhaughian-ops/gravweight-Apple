@@ -42,6 +42,14 @@ final class PhoneViewModel: ObservableObject {
     /// Bottom toast message (Android `Toast` equivalent).
     @Published var toast: String?
 
+    /// New social notification shown as a slide-down banner on any tab.
+    @Published var incomingNotification: NotificationDto?
+    /// Set when the user taps a notification (banner, sheet or system); tab view + Social consume it.
+    @Published var notificationRoute: NotificationRoute?
+    /// Bumped on every notification tap so the tab bar switches to Social.
+    @Published var openSocialRequest = 0
+    private var bannerTask: Task<Void, Never>?
+
     // MARK: Preferences (persisted)
 
     @Published var isDarkMode: Bool { didSet { defaults.set(isDarkMode, forKey: Keys.dark) } }
@@ -308,7 +316,49 @@ final class PhoneViewModel: ObservableObject {
     }
 
     func fetchNotifications() async {
-        if let n = try? await api.getNotifications() { notifications = n }
+        guard currentUser != nil, let n = try? await api.getNotifications() else { return }
+        notifications = n
+        let fresh = AppNotifications.shared.takeFresh(from: n)
+        if let newest = fresh.first {
+            if UIApplication.shared.applicationState == .active {
+                showBanner(newest)
+            } else {
+                fresh.prefix(3).forEach { AppNotifications.shared.post($0) }
+            }
+        }
+        AppNotifications.shared.setBadge(unreadNotificationCount)
+    }
+
+    var unreadNotificationCount: Int { notifications.filter { !$0.is_read }.count }
+
+    private func showBanner(_ n: NotificationDto) {
+        bannerTask?.cancel()
+        incomingNotification = n
+        bannerTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.incomingNotification = nil
+        }
+    }
+
+    func dismissBanner() {
+        bannerTask?.cancel()
+        incomingNotification = nil
+    }
+
+    /// Tap on any notification (banner / list / system) → navigate to it.
+    func openNotification(_ n: NotificationDto) {
+        dismissBanner()
+        notificationRoute = NotificationRoute(type: n.type, linkId: n.link_id)
+        openSocialRequest += 1
+        if !n.is_read { markNotificationsRead() }
+    }
+
+    func openRoute(_ route: NotificationRoute) {
+        dismissBanner()
+        notificationRoute = route
+        openSocialRequest += 1
+        markNotificationsRead()
     }
 
     func fetchGroups() async {
@@ -383,6 +433,7 @@ final class PhoneViewModel: ObservableObject {
 
     func markNotificationsRead() {
         notifications = notifications.map { var n = $0; n.is_read = true; return n }
+        AppNotifications.shared.setBadge(0)
         Task { try? await api.markNotificationsRead() }
     }
 

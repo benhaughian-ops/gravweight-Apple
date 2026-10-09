@@ -65,6 +65,10 @@ targets:
         NSHealthShareUsageDescription: "WODwire reads your steps, heart rate, calories, workouts and body measurements to show them on your dashboard and sync them to the WODwire web app."
         NSHealthUpdateUsageDescription: "WODwire may save workout data to Apple Health."
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.WODwire.notifications.refresh
     entitlements:
       path: WODwire/WODwire.entitlements
       properties:

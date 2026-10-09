@@ -21,6 +21,8 @@ struct SocialView: View {
     @State private var showShareProgress = false
     @State private var createPrefill: CreatePrefill?
     @State private var profileTarget: ProfileTarget?
+    @State private var showChallengePrompt = false
+    @Environment(\.openURL) private var openURL
 
     private var unreadCount: Int { vm.notifications.filter { !$0.is_read }.count }
 
@@ -68,17 +70,19 @@ struct SocialView: View {
         .sheet(isPresented: $showNotifications) {
             NotificationsSheet(notifications: notificationSnapshot) { n in
                 showNotifications = false
-                switch n.type {
-                case "friend_request", "friend_accept":
-                    tab = 1
-                    if let uid = n.link_id { profileTarget = ProfileTarget(id: uid) }
-                case "group_post":
-                    tab = 2
-                default:
-                    tab = 0
-                }
+                vm.openNotification(n)
             }
             .themed(vm)
+        }
+        .onAppear { consumeRoute() }
+        .onChange(of: vm.notificationRoute) { _, _ in consumeRoute() }
+        .confirmationDialog("Challenges", isPresented: $showChallengePrompt, titleVisibility: .visible) {
+            Button("Open Challenges") {
+                if let url = URL(string: "https://wodwire.com/#social-challenges") { openURL(url) }
+            }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("Accept, track and compare challenges on the WODwire dashboard.")
         }
         .sheet(item: $createPrefill) { pre in
             CreatePostSheet(prefill: pre, onPosted: { tab = 0 })
@@ -92,6 +96,15 @@ struct SocialView: View {
             UserProfileView(userId: t.id)
                 .themed(vm)
         }
+    }
+
+    /// Applies a notification tap (from the banner, bell list or a system notification).
+    private func consumeRoute() {
+        guard let route = vm.notificationRoute else { return }
+        vm.notificationRoute = nil
+        withAnimation(.easeInOut(duration: 0.2)) { tab = route.socialTab }
+        if route == .challenge { showChallengePrompt = true }
+        Task { await vm.fetchSocialAll() }
     }
 
     private var header: some View {
